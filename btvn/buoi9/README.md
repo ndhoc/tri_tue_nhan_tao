@@ -51,7 +51,7 @@ Chương trình hỗ trợ mô phỏng **10 thuật toán tìm kiếm** từ mù
 1. Mở terminal tại thư mục chứa file mã nguồn.
 2. Chạy lệnh sau để khởi động ứng dụng:
    ```bash
-   python 24162039_8puzzle_Visualize.py
+   python 24162039_NguyenDucHoc_8puzzle_Visualize.py
    ```
 
 ---
