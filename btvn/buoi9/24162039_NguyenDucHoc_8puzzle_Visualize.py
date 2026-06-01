@@ -371,7 +371,7 @@ def simple_hill_climbing(bat_dau, dich):
             ds_cost.append(best_cost)
         else:
             return duong, so_node, "Không tìm được nước đi (Thất bại)", {"cost": ds_cost[-1], "values": ds_cost}
-
+ 
 def a_star(bat_dau, dich):
     node = doi_tuple(bat_dau)
     dich_tuple = doi_tuple(dich)
