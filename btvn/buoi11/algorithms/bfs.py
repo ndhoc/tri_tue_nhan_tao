@@ -1,0 +1,63 @@
+from queue import Queue
+from .common import bind_search_functions
+
+def bfs_phien_ban_1(bat_dau, dich):
+    node, dich_list, is_belief, check_goal_fn, get_successors_fn, _ = bind_search_functions(bat_dau, dich)
+
+    frontier = Queue()
+    frontier.put(node)
+    explored = set()
+    parent = {node: None}
+    so_node = 0
+
+    while not frontier.empty():
+        curr = frontier.get()
+        so_node += 1
+        
+        if check_goal_fn(curr): 
+            path = []
+            temp = curr
+            while temp is not None:
+                path.append(temp)
+                temp = parent[temp]
+            path.reverse()
+            return path, so_node, "Tìm thấy", {"cost": len(path) - 1, "values": list(range(len(path)))}
+        
+        explored.add(curr)
+        
+        for child in get_successors_fn(curr):
+            if child not in explored and child not in parent:
+                parent[child] = curr
+                frontier.put(child)
+    return None, so_node, "Không tìm thấy", {}
+
+def bfs_phien_ban_2(bat_dau, dich):
+    node, dich_list, is_belief, check_goal_fn, get_successors_fn, _ = bind_search_functions(bat_dau, dich)
+            
+    if check_goal_fn(node): 
+        return [node], 1, "Tìm thấy", {"cost": 0, "values": [0]}
+    
+    frontier = Queue()
+    frontier.put(node)
+    explored = set()
+    parent = {node: None}
+    so_node = 0
+
+    while not frontier.empty():
+        curr = frontier.get()
+        so_node += 1
+        explored.add(curr)
+
+        for child in get_successors_fn(curr):
+            if child not in explored and child not in parent:
+                parent[child] = curr
+                if check_goal_fn(child):
+                    path = []
+                    temp = child
+                    while temp is not None:
+                        path.append(temp)
+                        temp = parent[temp]
+                    path.reverse()
+                    return path, so_node, "Tìm thấy", {"cost": len(path) - 1, "values": list(range(len(path)))}
+                frontier.put(child)
+    return None, so_node, "Không tìm thấy", {}

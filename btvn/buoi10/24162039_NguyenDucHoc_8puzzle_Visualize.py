@@ -372,6 +372,40 @@ def simple_hill_climbing(bat_dau, dich):
         else:
             return duong, so_node, "Không tìm được nước đi (Thất bại)", {"cost": ds_cost[-1], "values": ds_cost}
 
+def steepest_ascent_hill_climbing(bat_dau, dich):
+    node = doi_tuple(bat_dau)
+    dich_tuple = doi_tuple(dich)
+    
+    current = node
+    duong = [current]
+    c_start = manhattan_distance(current, dich_tuple)
+    ds_cost = [c_start]
+    so_node = 0
+    
+    while True:
+        so_node += 1
+        if current == dich_tuple:
+            return duong, so_node, "Tìm thấy", {"cost": ds_cost[-1], "values": ds_cost}
+            
+        neighbors = tao_con(current)
+        current_cost = manhattan_distance(current, dich_tuple)
+        
+        best_neighbor = None
+        best_cost = current_cost
+        
+        for neighbor in neighbors:
+            neighbor_cost = manhattan_distance(neighbor, dich_tuple)
+            if neighbor_cost < best_cost:
+                best_cost = neighbor_cost
+                best_neighbor = neighbor
+                
+        if best_neighbor is not None:
+            current = best_neighbor
+            duong.append(current)
+            ds_cost.append(best_cost)
+        else:
+            return duong, so_node, "Không tìm được nước đi (Thất bại)", {"cost": ds_cost[-1], "values": ds_cost}
+
 def stochastic_hill_climbing(bat_dau, dich):
     node = doi_tuple(bat_dau)
     dich_tuple = doi_tuple(dich)
@@ -652,6 +686,7 @@ ds_thuat_toan = [
     ("IDA*", ida_star),
     ("Local Search", local_search),
     ("Simple Hill Climbing", simple_hill_climbing),
+    ("Steepest-ascent HC", steepest_ascent_hill_climbing),
     ("Stochastic HC", stochastic_hill_climbing),
     ("Random Restart HC", random_restart_hill_climbing),
     ("Local Beam Search", local_beam_search)
