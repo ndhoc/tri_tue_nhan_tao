@@ -19,6 +19,7 @@ Phần mềm trực quan hóa các thuật toán tìm kiếm giải bài toán 8
 - `algorithms/simulated_annealing.py`: Thuật toán Luyện thép thường và Luyện thép cho Trạng thái Belief.
 - `algorithms/and_or_search.py`: Thuật toán AND-OR Graph Search.
 - `algorithms/backtracking_search.py`: Thuật toán Backtracking Search (CSP).
+- `algorithms/forward_checking.py`: Thuật toán Forward Checking (CSP).
 
 ---
 
@@ -33,8 +34,9 @@ Phần mềm trực quan hóa các thuật toán tìm kiếm giải bài toán 8
 ### 2. Thuật toán AND-OR Graph Search
 - Thực hiện tìm kiếm trên đồ thị AND-OR trong môi trường 8-Puzzle (và môi trường Belief State). Kế hoạch tìm kiếm được phân rã thành các nhánh điều kiện hành động và trạng thái tương ứng.
 
-### 3. Thuật toán Backtracking CSP
-- Biểu diễn bài toán dưới dạng bài toán thỏa mãn ràng buộc (CSP), trong đó mỗi bước đi (trạng thái) là một biến cần gán giá trị hợp lệ (các trạng thái kế tiếp) và đảm bảo tính nhất quán (không lặp lại trạng thái cũ trên cùng đường đi).
+### 3. Thuật toán CSP (Constraint Satisfaction Problem)
+- **Backtracking CSP**: Biểu diễn bài toán dưới dạng bài toán thỏa mãn ràng buộc (CSP). Thuật toán thử gán tuần tự các giá trị cho các ô trống và quay lui nếu phát hiện vi phạm.
+- **Forward Checking**: Mở rộng từ Backtracking, kết hợp lan truyền ràng buộc (Constraint Propagation) thu hẹp miền giá trị của các ô chưa gán ngay sau mỗi bước gán, giúp cắt tỉa sớm các nhánh tìm kiếm vô ích.
 
 ### 4. Tìm kiếm trong Môi trường không nhìn thấy (Belief State Search)
 Hỗ trợ giải bài toán 8-Puzzle khi một phần hoặc toàn bộ thông tin của Start hoặc Goal bị khuyết (ẩn):
@@ -44,6 +46,10 @@ Hỗ trợ giải bài toán 8-Puzzle khi một phần hoặc toàn bộ thông 
 
 Heuristic sử dụng cho belief state $B$ và tập đích $G$:
 $$h(B) = \min_{g \in G} \sum_{s \in B} \text{ManhattanDistance}(s, g)$$
+
+### 5. Nhập Ma trận Thủ công
+- Cung cấp giao diện Popup cho phép người dùng tự nhập trực tiếp 9 số (0-8) vào lưới 3x3 để tạo trạng thái xuất phát theo ý muốn.
+- Tự động kiểm tra tính hợp lệ của giá trị (đủ 9 số, không trùng lặp, nằm trong khoảng 0-8).
 
 ---
 
@@ -62,6 +68,7 @@ Khi chọn thuật toán, chương trình sẽ mở ra một **Cửa sổ Mô ph
    ```bash
    python 24162039_NguyenDucHoc_8puzzle_Visualize.py
    ```
-3. Thiết lập chế độ môi trường (Quan sát đầy đủ / Khuyết Start / Khuyết Goal / Khuyết 1 phần).
-4. Thiết lập số lượng $k$ (belief state size) và các tham số Luyện thép ($T_0, T_{min}, \alpha$).
-5. Bấm vào bất kỳ thuật toán nào để mở cửa sổ mô phỏng và bắt đầu chạy!
+3. Sử dụng nút **Sinh ma trận ngẫu nhiên** hoặc **Nhập ma trận** để thiết lập bảng.
+4. Thiết lập chế độ môi trường (Quan sát đầy đủ / Khuyết Start / Khuyết Goal / Khuyết 1 phần).
+5. Thiết lập số lượng $k$ (belief state size) và các tham số Luyện thép ($T_0, T_{min}, \alpha$).
+6. Cột công cụ bên phải đã được trang bị **Thanh cuộn dọc** để hiển thị tất cả các thuật toán trên những màn hình nhỏ. Bấm vào bất kỳ thuật toán nào để mở cửa sổ mô phỏng và bắt đầu chạy!
