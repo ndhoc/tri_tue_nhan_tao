@@ -542,7 +542,7 @@ class PuzzleApp:
     def __init__(self, root):
         self.root = root
         self.root.title("8-Puzzle Visualizer")
-        self.root.geometry("1100x670")
+        self.root.geometry("1150x750")
         self.root.configure(bg="#f1f5f9")
 
         self.style = ttk.Style()
@@ -624,16 +624,32 @@ class PuzzleApp:
         self.lbl_main_info = tk.Label(left_frame, text="Chọn thuật toán ở bảng bên phải để mở cửa sổ trực quan chi tiết.", font=("Segoe UI", 11, "italic"), fg="#475569", bg="#ffffff", justify="center")
         self.lbl_main_info.pack(pady=15)
 
-        right_frame = tk.Frame(main_frame, bg="#ffffff", bd=1, relief="solid", width=340, padx=15, pady=15)
+        right_frame = tk.Frame(main_frame, bg="#ffffff", bd=1, relief="solid", width=360)
         right_frame.pack(side=tk.RIGHT, fill=tk.Y)
         right_frame.pack_propagate(False)
         
-        control_inner = tk.Frame(right_frame, bg="#ffffff")
-        control_inner.pack(fill=tk.BOTH, expand=True)
+        canvas = tk.Canvas(right_frame, bg="#ffffff", highlightthickness=0)
+        scrollbar = ttk.Scrollbar(right_frame, orient="vertical", command=canvas.yview)
+        control_inner = tk.Frame(canvas, bg="#ffffff", padx=10, pady=10)
+        
+        control_inner.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas_win = canvas.create_window((0, 0), window=control_inner, anchor="nw")
+        canvas.bind("<Configure>", lambda e: canvas.itemconfig(canvas_win, width=e.width))
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind("<Enter>", lambda _: canvas.bind_all("<MouseWheel>", _on_mousewheel))
+        canvas.bind("<Leave>", lambda _: canvas.unbind_all("<MouseWheel>"))
 
         tk.Label(control_inner, text="Thiết Lập Bài Toán", font=("Segoe UI", 11, "bold"), bg="#ffffff", fg="#1e40af").pack(anchor=tk.W, pady=(0, 5))
         self.btn_sinh = tk.Button(control_inner, text="Sinh ma trận ngẫu nhiên", font=("Segoe UI", 10, "bold"), bg="#3b82f6", fg="white", relief="flat", command=self.bam_sinh)
         self.btn_sinh.pack(fill=tk.X, pady=2)
+        self.btn_nhap = tk.Button(control_inner, text="Nhập ma trận", font=("Segoe UI", 10, "bold"), bg="#8b5cf6", fg="white", relief="flat", command=self.bam_nhap_ma_tran)
+        self.btn_nhap.pack(fill=tk.X, pady=2)
         
         # Environment Settings
         env_frame = tk.LabelFrame(control_inner, text="Chế độ Môi trường", font=("Segoe UI", 10, "bold"), bg="#ffffff", fg="#1e40af", padx=8, pady=5)
@@ -737,6 +753,55 @@ class PuzzleApp:
         self.bang = sinh_ma_tran()
         self.cap_nhat_giao_dien_che_do()
         self.lbl_main_info.config(text="Đã sinh trạng thái bắt đầu ngẫu nhiên mới.", fg="#047857")
+
+    def bam_nhap_ma_tran(self):
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Nhập ma trận 3x3")
+        dialog.geometry("280x220")
+        dialog.resizable(False, False)
+        dialog.grab_set()
+        
+        tk.Label(dialog, text="Nhập 9 số (0-8), 0 là ô trống:", font=("Segoe UI", 10)).pack(pady=5)
+        
+        grid_frame = tk.Frame(dialog)
+        grid_frame.pack(pady=5)
+        entries = []
+        for i in range(3):
+            row_entries = []
+            for j in range(3):
+                e = tk.Entry(grid_frame, width=4, font=("Segoe UI", 14, "bold"), justify="center")
+                e.grid(row=i, column=j, padx=3, pady=3)
+                e.insert(0, str(self.bang[i][j]))
+                row_entries.append(e)
+            entries.append(row_entries)
+        
+        lbl_err = tk.Label(dialog, text="", font=("Segoe UI", 9), fg="red")
+        lbl_err.pack()
+        
+        def xac_nhan():
+            try:
+                vals = []
+                for i in range(3):
+                    row = []
+                    for j in range(3):
+                        v = int(entries[i][j].get().strip())
+                        if v < 0 or v > 8:
+                            lbl_err.config(text="Giá trị phải từ 0 đến 8!")
+                            return
+                        row.append(v)
+                    vals.append(row)
+                flat = [vals[i][j] for i in range(3) for j in range(3)]
+                if sorted(flat) != list(range(9)):
+                    lbl_err.config(text="Phải chứa đủ các số 0-8 không trùng!")
+                    return
+                self.bang = vals
+                self.cap_nhat_giao_dien_che_do()
+                self.lbl_main_info.config(text="Đã nhập trạng thái bắt đầu mới.", fg="#047857")
+                dialog.destroy()
+            except ValueError:
+                lbl_err.config(text="Vui lòng nhập số nguyên!")
+        
+        tk.Button(dialog, text="Xác nhận", font=("Segoe UI", 10, "bold"), bg="#10b981", fg="white", relief="flat", command=xac_nhan).pack(pady=5)
 
     def cap_nhat_giao_dien_che_do(self):
         mode = self.var_mode.get()
