@@ -26,6 +26,7 @@ from algorithms.beam_search import local_beam_search
 from algorithms.simulated_annealing import simulated_annealing, simulated_annealing_belief
 from algorithms.and_or_search import and_or_graph_search
 from algorithms.backtracking_search import backtracking_search
+from algorithms.forward_checking import forward_checking_search
 
 ds_thuat_toan = [
     ("BFS Version 1", bfs_phien_ban_1),
@@ -44,7 +45,8 @@ ds_thuat_toan = [
     ("Local Beam Search", local_beam_search),
     ("Simulated Annealing", simulated_annealing),
     ("AND-OR Search", and_or_graph_search),
-    ("Backtracking CSP", backtracking_search)
+    ("Backtracking CSP", backtracking_search),
+    ("Forward Checking", forward_checking_search)
 ]
 
 def sinh_cac_trang_thai_tu_khuon(khuon, k, parity_must_be_even=True):
@@ -106,6 +108,7 @@ class SimulationWindow(tk.Toplevel):
         self.dang_chay = False
         self.dang_tim_kiem = True
         self.extra_info = {}
+        self.is_csp_algo = algo_name in ["Backtracking CSP", "Forward Checking"]
         
         self.is_destroyed = False
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -298,6 +301,8 @@ class SimulationWindow(tk.Toplevel):
                     res = self.algo_func(tuple(self.starts), self.goals, k=self.extra_params.get("k_beam", 5))
                 elif self.algo_name == "Random Restart HC":
                     res = self.algo_func(tuple(self.starts), self.goals, max_restart=self.extra_params.get("max_restart", 50))
+                elif self.is_csp_algo:
+                    res = self.algo_func(tuple(self.starts), self.goals)
                 else:
                     # Run generic search algorithm in belief space
                     res = self.algo_func(tuple(self.starts), self.goals)
@@ -325,6 +330,8 @@ class SimulationWindow(tk.Toplevel):
                     res = self.algo_func(self.starts[0], self.goals[0], k=self.extra_params.get("k_beam", 5))
                 elif self.algo_name == "Random Restart HC":
                     res = self.algo_func(self.starts[0], self.goals[0], max_restart=self.extra_params.get("max_restart", 50))
+                elif self.is_csp_algo:
+                    res = self.algo_func(self.starts[0], self.goals[0])
                 else:
                     res = self.algo_func(self.starts[0], self.goals[0])
                 
@@ -374,7 +381,7 @@ class SimulationWindow(tk.Toplevel):
                 self.current_step = 0
                 
                 # Update label name based on algorithm
-                if self.algo_name in ["BFS Version 1", "BFS Version 2", "DFS", "IDS", "AND-OR Search", "Backtracking CSP"]:
+                if self.algo_name in ["BFS Version 1", "BFS Version 2", "DFS", "IDS", "AND-OR Search", "Backtracking CSP", "Forward Checking"]:
                     self.lbl_cost_name.config(text="Cost path:")
                 elif self.algo_name == "UCS":
                     self.lbl_cost_name.config(text="g(B):" if self.is_belief else "g(n):")
@@ -423,27 +430,34 @@ class SimulationWindow(tk.Toplevel):
         else:
             self.lbl_temp.config(text="-")
             
+        assignment_log = self.extra_info.get("assignment_log", [])
         if step_idx > 0:
-            if self.is_belief and step_idx - 1 < len(self.actions):
+            if self.is_csp_algo and step_idx - 1 < len(assignment_log):
+                var, val = assignment_log[step_idx - 1]
+                self.lbl_action.config(text=f"Gan x_{var+1} = {val}")
+            elif self.is_belief and step_idx - 1 < len(self.actions):
                 act = self.actions[step_idx - 1]
                 self.lbl_action.config(text=f"{act} ({giai_thich_huong(act)})")
             elif not self.is_belief:
                 act = huong_di_chuyen(self.path[step_idx - 1], self.path[step_idx])
                 self.lbl_action.config(text=f"{act} ({giai_thich_huong(act)})")
         else:
-            self.lbl_action.config(text="START")
+            self.lbl_action.config(text="START" if not self.is_csp_algo else "Assignment = []")
             
     def hien_bang_board(self, b_idx, state):
         cells = self.board_cells[b_idx]
         for i in range(3):
             for j in range(3):
                 val = state[i][j]
-                if val == 0:
+                if val == -1:
+                    # Ô chưa được gán (CSP)
+                    cells[i][j].config(text="?", bg="#fef3c7", fg="#92400e")
+                elif val == 0:
                     cells[i][j].config(text="", bg="#e2e8f0")
                 elif val == '?':
                     cells[i][j].config(text="?", bg="#cbd5e1")
                 else:
-                    cells[i][j].config(text=str(val), bg="#ffffff")
+                    cells[i][j].config(text=str(val), bg="#ffffff", fg="#1e293b")
                     
 
                 
@@ -488,26 +502,31 @@ class SimulationWindow(tk.Toplevel):
     def ghi_log_tat_ca(self):
         self.txt_log.config(state="normal")
         self.txt_log.delete("1.0", tk.END)
-        self.txt_log.insert(tk.END, "LOG CHI TIẾT QUÁ TRÌNH\n")
-        self.txt_log.insert(tk.END, f"Thuật toán: {self.algo_name}\n")
-        self.txt_log.insert(tk.END, f"Môi trường: {'Không nhìn thấy' if self.is_belief else 'Quan sát đầy đủ'}\n")
-        self.txt_log.insert(tk.END, f"Số bước di chuyển: {len(self.path) - 1}\n")
+        
+        self.txt_log.insert(tk.END, "LOG CHI TIET QUA TRINH\n")
+        self.txt_log.insert(tk.END, f"Thuat toan: {self.algo_name}\n")
+        self.txt_log.insert(tk.END, f"Moi truong: {'Khong nhin thay' if self.is_belief else 'Quan sat day du'}\n")
+        self.txt_log.insert(tk.END, f"So buoc: {len(self.path) - 1}\n")
         self.txt_log.insert(tk.END, "-"*40 + "\n")
         
         history_h = self.extra_info.get("history_h", self.extra_info.get("values", []))
         history_T = self.extra_info.get("history_T", [])
+        assignment_log = self.extra_info.get("assignment_log", [])
         
         for idx in range(len(self.path)):
-            log_str = f"Bước {idx}"
+            log_str = f"Buoc {idx}"
             if idx > 0:
-                if self.is_belief and idx - 1 < len(self.actions):
+                if self.is_csp_algo and idx - 1 < len(assignment_log):
+                    var, val = assignment_log[idx - 1]
+                    log_str += f" | Gan x_{var+1} = {val}"
+                elif self.is_belief and idx - 1 < len(self.actions):
                     act = self.actions[idx - 1]
                     log_str += f" | {act} ({giai_thich_huong(act)})"
                 elif not self.is_belief:
                     act = huong_di_chuyen(self.path[idx-1], self.path[idx])
                     log_str += f" | {act} ({giai_thich_huong(act)})"
             else:
-                log_str += " | START"
+                log_str += " | START" if not self.is_csp_algo else " | Assignment = []"
                 
             if idx < len(history_h):
                 log_str += f" | h: {history_h[idx]}"
@@ -516,21 +535,39 @@ class SimulationWindow(tk.Toplevel):
                 
             self.txt_log.insert(tk.END, log_str + "\n")
             
-            if self.is_belief:
+            if self.is_csp_algo:
+                # Hien thi bang 3x3 voi ? cho o chua gan
+                state = self.path[idx]
+                for r in range(3):
+                    row_str = ""
+                    for c in range(3):
+                        v = state[r][c]
+                        if v == -1:
+                            row_str += "? "
+                        elif v == 0:
+                            row_str += "_ "
+                        else:
+                            row_str += str(v) + " "
+                    self.txt_log.insert(tk.END, row_str + "\n")
+            elif self.is_belief:
                 belief = self.path[idx]
                 for b_idx, st in enumerate(belief):
-                    self.txt_log.insert(tk.END, f"  * Bàn cờ {b_idx+1}:\n")
+                    self.txt_log.insert(tk.END, f"  * Ban co {b_idx+1}:\n")
                     self.txt_log.insert(tk.END, self.indent_text(doi_trang_thai_thanh_chuoi(st), "    "))
             else:
                 self.txt_log.insert(tk.END, doi_trang_thai_thanh_chuoi(self.path[idx]))
                 
             self.txt_log.insert(tk.END, "-"*40 + "\n")
             
-        if self.is_belief and self.actions:
-            self.txt_log.insert(tk.END, "\nChuỗi nước đi hoàn chỉnh:\n")
+        if self.is_csp_algo and assignment_log:
+            self.txt_log.insert(tk.END, "\nThu tu gan bien:\n")
+            assigns = [f"x_{var+1}={val}" for var, val in assignment_log]
+            self.txt_log.insert(tk.END, " -> ".join(assigns) + "\n")
+        elif self.is_belief and self.actions:
+            self.txt_log.insert(tk.END, "\nChuoi nuoc di hoan chinh:\n")
             self.txt_log.insert(tk.END, " -> ".join(self.actions) + "\n")
         elif not self.is_belief and len(self.path) > 1:
-            self.txt_log.insert(tk.END, "\nChuỗi nước đi hoàn chỉnh:\n")
+            self.txt_log.insert(tk.END, "\nChuoi nuoc di hoan chinh:\n")
             acts = []
             for i in range(1, len(self.path)):
                 acts.append(huong_di_chuyen(self.path[i-1], self.path[i]))
@@ -546,7 +583,7 @@ class PuzzleApp:
     def __init__(self, root):
         self.root = root
         self.root.title("8-Puzzle Visualizer")
-        self.root.geometry("1100x670")
+        self.root.geometry("1150x750")
         self.root.configure(bg="#f1f5f9")
 
         self.style = ttk.Style()
@@ -628,16 +665,32 @@ class PuzzleApp:
         self.lbl_main_info = tk.Label(left_frame, text="Chọn thuật toán ở bảng bên phải để mở cửa sổ trực quan chi tiết.", font=("Segoe UI", 11, "italic"), fg="#475569", bg="#ffffff", justify="center")
         self.lbl_main_info.pack(pady=15)
 
-        right_frame = tk.Frame(main_frame, bg="#ffffff", bd=1, relief="solid", width=340, padx=15, pady=15)
+        right_frame = tk.Frame(main_frame, bg="#ffffff", bd=1, relief="solid", width=360)
         right_frame.pack(side=tk.RIGHT, fill=tk.Y)
         right_frame.pack_propagate(False)
         
-        control_inner = tk.Frame(right_frame, bg="#ffffff")
-        control_inner.pack(fill=tk.BOTH, expand=True)
+        canvas = tk.Canvas(right_frame, bg="#ffffff", highlightthickness=0)
+        scrollbar = ttk.Scrollbar(right_frame, orient="vertical", command=canvas.yview)
+        control_inner = tk.Frame(canvas, bg="#ffffff", padx=10, pady=10)
+        
+        control_inner.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas_win = canvas.create_window((0, 0), window=control_inner, anchor="nw")
+        canvas.bind("<Configure>", lambda e: canvas.itemconfig(canvas_win, width=e.width))
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind("<Enter>", lambda _: canvas.bind_all("<MouseWheel>", _on_mousewheel))
+        canvas.bind("<Leave>", lambda _: canvas.unbind_all("<MouseWheel>"))
 
         tk.Label(control_inner, text="Thiết Lập Bài Toán", font=("Segoe UI", 11, "bold"), bg="#ffffff", fg="#1e40af").pack(anchor=tk.W, pady=(0, 5))
         self.btn_sinh = tk.Button(control_inner, text="Sinh ma trận ngẫu nhiên", font=("Segoe UI", 10, "bold"), bg="#3b82f6", fg="white", relief="flat", command=self.bam_sinh)
         self.btn_sinh.pack(fill=tk.X, pady=2)
+        self.btn_nhap = tk.Button(control_inner, text="Nhập ma trận", font=("Segoe UI", 10, "bold"), bg="#8b5cf6", fg="white", relief="flat", command=self.bam_nhap_ma_tran)
+        self.btn_nhap.pack(fill=tk.X, pady=2)
         
         # Environment Settings
         env_frame = tk.LabelFrame(control_inner, text="Chế độ Môi trường", font=("Segoe UI", 10, "bold"), bg="#ffffff", fg="#1e40af", padx=8, pady=5)
@@ -741,6 +794,55 @@ class PuzzleApp:
         self.bang = sinh_ma_tran()
         self.cap_nhat_giao_dien_che_do()
         self.lbl_main_info.config(text="Đã sinh trạng thái bắt đầu ngẫu nhiên mới.", fg="#047857")
+
+    def bam_nhap_ma_tran(self):
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Nhập ma trận 3x3")
+        dialog.geometry("280x220")
+        dialog.resizable(False, False)
+        dialog.grab_set()
+        
+        tk.Label(dialog, text="Nhập 9 số (0-8), 0 là ô trống:", font=("Segoe UI", 10)).pack(pady=5)
+        
+        grid_frame = tk.Frame(dialog)
+        grid_frame.pack(pady=5)
+        entries = []
+        for i in range(3):
+            row_entries = []
+            for j in range(3):
+                e = tk.Entry(grid_frame, width=4, font=("Segoe UI", 14, "bold"), justify="center")
+                e.grid(row=i, column=j, padx=3, pady=3)
+                e.insert(0, str(self.bang[i][j]))
+                row_entries.append(e)
+            entries.append(row_entries)
+        
+        lbl_err = tk.Label(dialog, text="", font=("Segoe UI", 9), fg="red")
+        lbl_err.pack()
+        
+        def xac_nhan():
+            try:
+                vals = []
+                for i in range(3):
+                    row = []
+                    for j in range(3):
+                        v = int(entries[i][j].get().strip())
+                        if v < 0 or v > 8:
+                            lbl_err.config(text="Giá trị phải từ 0 đến 8!")
+                            return
+                        row.append(v)
+                    vals.append(row)
+                flat = [vals[i][j] for i in range(3) for j in range(3)]
+                if sorted(flat) != list(range(9)):
+                    lbl_err.config(text="Phải chứa đủ các số 0-8 không trùng!")
+                    return
+                self.bang = vals
+                self.cap_nhat_giao_dien_che_do()
+                self.lbl_main_info.config(text="Đã nhập trạng thái bắt đầu mới.", fg="#047857")
+                dialog.destroy()
+            except ValueError:
+                lbl_err.config(text="Vui lòng nhập số nguyên!")
+        
+        tk.Button(dialog, text="Xác nhận", font=("Segoe UI", 10, "bold"), bg="#10b981", fg="white", relief="flat", command=xac_nhan).pack(pady=5)
 
     def cap_nhat_giao_dien_che_do(self):
         mode = self.var_mode.get()

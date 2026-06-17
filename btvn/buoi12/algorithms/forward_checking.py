@@ -4,19 +4,25 @@ import random
 sys.setrecursionlimit(5000)
 
 
-def backtracking_search(bat_dau, dich):
+def forward_checking_search(bat_dau, dich):
     """
-    Thuật toán Backtracking Search phong cách CSP cho 8-puzzle.
+    Thuật toán Forward Checking cho 8-puzzle dưới dạng CSP.
+
+    Giống Backtracking nhưng thêm bước Forward Checking:
+    - Sau khi gán assignment cho biến var
+    - Loại bỏ khỏi domain những giá trị không hợp lệ nữa
+    - Cập nhật lại domain D
+    - Nếu domain rỗng -> backtracking
 
     Mô hình CSP:
-    - Variables: x_1, x_2, ..., x_9 (9 ô trên bảng 3x3, theo thứ tự hàng)
+    - Variables: x_1, x_2, ..., x_9 (9 ô trên bảng 3x3)
     - Domain: D = {0, 1, 2, 3, 4, 5, 6, 7, 8}
     - Constraints:
-        1. AllDiff: mỗi x_i nhận giá trị khác nhau (x_i != x_j với i != j)
+        1. AllDiff: mỗi x_i nhận giá trị khác nhau
         2. Goal: assignment cuối cùng phải khớp với goal state
     """
 
-    # Chuẩn hóa goal thành dạng phẳng (flat list 9 phần tử)
+    # Chuẩn hóa goal thành dạng phẳng
     if isinstance(dich, (list, tuple)) and len(dich) > 0:
         first = dich[0]
         if isinstance(first, (list, tuple)) and len(first) > 0:
@@ -36,11 +42,8 @@ def backtracking_search(bat_dau, dich):
 
     # CSP setup
     n = 9
-    domain = list(range(9))
-
     so_node = 0
     steps = []
-    # Lưu thông tin gán biến tại mỗi bước: (var_index, value)
     assignment_log = []
 
     def select_unassigned_variable(assignment):
@@ -48,8 +51,8 @@ def backtracking_search(bat_dau, dich):
         unassigned = [i for i in range(n) if i not in assignment]
         return random.choice(unassigned)
 
-    def order_domain_values(var, assignment):
-        return list(domain)
+    def order_domain_values(var, domains):
+        return list(domains[var])
 
     def is_consistent(var, value, assignment):
         if value in assignment.values():
@@ -58,7 +61,30 @@ def backtracking_search(bat_dau, dich):
             return False
         return True
 
-    def backtrack(assignment):
+    def forward_check(var, value, assignment, domains):
+        new_domains = {}
+        for i in range(n):
+            new_domains[i] = set(domains[i])
+
+        for future_var in range(n):
+            if future_var in assignment or future_var == var:
+                continue
+
+            # Ràng buộc AllDiff
+            if value in new_domains[future_var]:
+                new_domains[future_var].discard(value)
+
+            # Ràng buộc Goal
+            vals_to_remove = [v for v in new_domains[future_var] if v != goal_flat[future_var]]
+            for v in vals_to_remove:
+                new_domains[future_var].discard(v)
+
+            if len(new_domains[future_var]) == 0:
+                return None
+
+        return new_domains
+
+    def backtrack(assignment, domains):
         nonlocal so_node
 
         so_node += 1
@@ -71,14 +97,17 @@ def backtracking_search(bat_dau, dich):
 
         var = select_unassigned_variable(assignment)
 
-        for value in order_domain_values(var, assignment):
+        for value in order_domain_values(var, domains):
             if is_consistent(var, value, assignment):
                 assignment[var] = value
                 assignment_log.append((var, value))
 
-                result = backtrack(assignment)
-                if result != "failure":
-                    return result
+                new_domains = forward_check(var, value, assignment, domains)
+
+                if new_domains is not None:
+                    result = backtrack(assignment, new_domains)
+                    if result != "failure":
+                        return result
 
                 del assignment[var]
 
@@ -98,8 +127,12 @@ def backtracking_search(bat_dau, dich):
         return grid
 
     # ===== BẮT ĐẦU GIẢI =====
+    initial_domains = {}
+    for i in range(n):
+        initial_domains[i] = set(range(9))
+
     initial_assignment = {}
-    result = backtrack(initial_assignment)
+    result = backtrack(initial_assignment, initial_domains)
 
     if result != "failure":
         final_grid = assignment_to_grid(result)
