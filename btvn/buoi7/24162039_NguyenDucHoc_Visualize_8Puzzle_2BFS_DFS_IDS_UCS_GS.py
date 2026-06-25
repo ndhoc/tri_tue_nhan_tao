@@ -285,7 +285,7 @@ def greedy_search(bat_dau, dich):
                 heapq.heappush(frontier, (h_child, counter, child, duong + [child], ds_h + [h_child]))
 
     return None, so_node, "Không tìm thấy", {}
- 
+
 ds_thuat_toan = [
     ("BFS Version 1", bfs_phien_ban_1),
     ("BFS Version 2", bfs_phien_ban_2),

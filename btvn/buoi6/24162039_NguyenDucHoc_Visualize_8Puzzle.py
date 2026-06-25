@@ -250,7 +250,7 @@ ds_thuat_toan = [
     ("BFS1", bfs_phien_ban_1),
     ("BFS2", bfs_phien_ban_2),
     ("DFS", dfs),
-    ("IDS", ids),
+    ("IDS", ids)
 ]
 
 def hien_bang(a):
