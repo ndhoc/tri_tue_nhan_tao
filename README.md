@@ -25,4 +25,4 @@ Trong repository này, phần **btvn** được chia theo từng buổi học (t
 2. Đọc `README.md` (nếu có) trong thư mục đó để biết mô tả và cách chạy.
 3. Nếu có file chạy `.py` hoặc notebook `.ipynb` thì làm theo hướng dẫn bên trong.
 
-Bạn cũng có thể xem README tổng quan tại: `btvn/README.md`.
+Xem README tổng quan tại: `btvn/README.md`.
