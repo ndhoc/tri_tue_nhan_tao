@@ -1,6 +1,4 @@
-# tri_tue_nhan_tao
-
-Bài tập môn trí tuệ nhân tạo
+# Bài tập môn trí tuệ nhân tạo
 
 ## Thư mục BTVN (btvn)
 
