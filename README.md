@@ -1,5 +1,6 @@
 # tri_tue_nhan_tao
-BT MON TRI TUE NHAN TAO
+
+Bài tập môn trí tuệ nhân tạo
 
 ## Thư mục BTVN (btvn)
 
